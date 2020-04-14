@@ -1,0 +1,3 @@
+Send 5x5 pixels of binary RGB data (so that's 5 * 5 * 3 = 75 bytes) to
+the topic 'matrixflut' on test.mosquitto.org and the M5stack Atom Matrix
+shows the image.
