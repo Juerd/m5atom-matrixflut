@@ -1,14 +1,15 @@
 #include <FastLED.h>
+#include <SPIFFS.h>
 #include <WiFi.h>
+#include <WiFiConfig.h>
 #include <PubSubClient.h>
 
 const char*  mqtt_server = "test.mosquitto.org";
 const char*  mqtt_topic  = "matrixflut";
-const char*  wifi_ssid   = "YOUR_WIFI_HERE";
-const char*  wifi_psk    = "YOUR_WIFI_HERE";
 
 const int    ledpin  = 27;
 const int    numleds = 25;
+const int    buttonpin = 39;
 
 CRGB         leds[numleds];
 WiFiClient   espClient;
@@ -18,18 +19,30 @@ void setup() {
 
     FastLED.addLeds<WS2812B, ledpin, GRB>(leds, numleds);
     FastLED.setBrightness(20);
-    WiFi.begin(wifi_ssid, wifi_psk);
 
     Serial.begin(115200);
-    Serial.print("Connecting to wifi...");
-    CHSV color(0, 255, 255);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(50);
-        color.hue++;
+    SPIFFS.begin(true);
+    pinMode(buttonpin, INPUT);
+
+    WiFiConfig.onWaitLoop = []() {
+        static CHSV color(0, 255, 255);
+        color.hue += 10;
         FastLED.showColor(color);
-    }
-    Serial.println(" connected!");
-    FastLED.showColor(CRGB::Green);
+        if (! digitalRead(buttonpin)) WiFiConfig.portal();
+        return 50;
+    };
+    WiFiConfig.onSuccess = []() {
+        FastLED.showColor(CRGB::Green);
+        delay(200);
+    };
+    WiFiConfig.onPortalWaitLoop = []() {
+        static CHSV color(0, 255, 255);
+        color.saturation--;
+        FastLED.showColor(color);
+    };
+
+    WiFiConfig.connect();
+
 
     mqtt.setServer(mqtt_server, 1883);
     mqtt.setCallback(mqtt_callback);
