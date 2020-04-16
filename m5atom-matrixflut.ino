@@ -41,10 +41,12 @@ void setup() {
         FastLED.showColor(color);
     };
 
+    String server = WiFiConfig.string("mqtt_server", "test.mosquitto.org");
+    int    port   = WiFiConfig.integer("mqtt_port", 0, 65535, 1883);
+
     WiFiConfig.connect();
 
-
-    mqtt.setServer(mqtt_server, 1883);
+    mqtt.setServer(server.c_str(), port);
     mqtt.setCallback(mqtt_callback);
 }
 
