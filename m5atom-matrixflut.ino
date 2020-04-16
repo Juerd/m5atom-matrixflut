@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <WiFiConfig.h>
 #include <MQTT.h>
+#include <ArduinoOTA.h>
 
 String mqtt_topic;
 
@@ -13,6 +14,12 @@ const int    buttonpin = 39;
 CRGB         leds[numleds];
 WiFiClient   wificlient;
 MQTTClient   mqtt;
+
+void setup_ota() {
+    ArduinoOTA.setHostname(WiFiConfig.hostname.c_str());
+    ArduinoOTA.setPassword(WiFiConfig.password.c_str());
+    ArduinoOTA.begin();
+}
 
 void setup() {
 
@@ -32,12 +39,17 @@ void setup() {
     };
     WiFiConfig.onSuccess = []() {
         FastLED.showColor(CRGB::Green);
+        setup_ota();
         delay(200);
+    };
+    WiFiConfig.onPortal = []() {
+        setup_ota();
     };
     WiFiConfig.onPortalWaitLoop = []() {
         static CHSV color(0, 255, 255);
         color.saturation--;
         FastLED.showColor(color);
+        ArduinoOTA.handle();
     };
 
     String server = WiFiConfig.string("mqtt_server", 64, "test.mosquitto.org");
@@ -79,4 +91,5 @@ void loop() {
     }
 
     mqtt.loop();
+    ArduinoOTA.handle();
 }
