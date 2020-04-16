@@ -42,7 +42,7 @@ void setup() {
 
     String server = WiFiConfig.string("mqtt_server", 64, "test.mosquitto.org");
     int    port   = WiFiConfig.integer("mqtt_port", 0, 65535, 1883);
-    mqtt_topic    = WiFiConfig.string("mqtt_topic", "matrixflut");
+    mqtt_topic    = WiFiConfig.string("matrixflut_topic", "matrixflut");
 
     WiFiConfig.connect();
 
