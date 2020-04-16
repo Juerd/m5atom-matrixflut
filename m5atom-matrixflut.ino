@@ -2,18 +2,17 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <WiFiConfig.h>
-#include <PubSubClient.h>
+#include <MQTT.h>
 
-const char*  mqtt_server = "test.mosquitto.org";
-const char*  mqtt_topic  = "matrixflut";
+String mqtt_topic;
 
 const int    ledpin  = 27;
 const int    numleds = 25;
 const int    buttonpin = 39;
 
 CRGB         leds[numleds];
-WiFiClient   espClient;
-PubSubClient mqtt(espClient);
+WiFiClient   wificlient;
+MQTTClient   mqtt;
 
 void setup() {
 
@@ -41,16 +40,17 @@ void setup() {
         FastLED.showColor(color);
     };
 
-    String server = WiFiConfig.string("mqtt_server", "test.mosquitto.org");
+    String server = WiFiConfig.string("mqtt_server", 64, "test.mosquitto.org");
     int    port   = WiFiConfig.integer("mqtt_port", 0, 65535, 1883);
+    mqtt_topic    = WiFiConfig.string("mqtt_topic", "matrixflut");
 
     WiFiConfig.connect();
 
-    mqtt.setServer(server.c_str(), port);
-    mqtt.setCallback(mqtt_callback);
+    mqtt.begin(server.c_str(), port, wificlient);
+    mqtt.onMessageAdvanced(mqtt_callback);
 }
 
-void mqtt_callback(char* topic, byte* message, unsigned int length) {
+void mqtt_callback(MQTTClient* client, char* topic, char* message, int length) {
     Serial.println(topic);
     Serial.println(length);
     if (length != numleds * 3) return;
@@ -66,14 +66,13 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
 void loop() {
     while (!mqtt.connected()) {
         FastLED.showColor(CRGB::Blue);
-        Serial.printf("Connecting to %s...", mqtt_server);
         if (mqtt.connect("")) {
-            Serial.println(" connected!");
+            Serial.println("MQTT connected!");
             FastLED.showColor(CRGB::Green);
 
             mqtt.subscribe(mqtt_topic);
         } else {
-            Serial.println(" failed...");
+            Serial.println("MQTT connection failed...");
             FastLED.showColor(CRGB::Red);
             delay(1000);
         }
