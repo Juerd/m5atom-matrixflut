@@ -1,7 +1,7 @@
 #include <FastLED.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
-#include <WiFiConfig.h>
+#include <WiFiSettings.h>
 #include <MQTT.h>
 #include <ArduinoOTA.h>
 
@@ -16,8 +16,8 @@ WiFiClient   wificlient;
 MQTTClient   mqtt;
 
 void setup_ota() {
-    ArduinoOTA.setHostname(WiFiConfig.hostname.c_str());
-    ArduinoOTA.setPassword(WiFiConfig.password.c_str());
+    ArduinoOTA.setHostname(WiFiSettings.hostname.c_str());
+    ArduinoOTA.setPassword(WiFiSettings.password.c_str());
     ArduinoOTA.begin();
 }
 
@@ -30,33 +30,33 @@ void setup() {
     SPIFFS.begin(true);
     pinMode(buttonpin, INPUT);
 
-    WiFiConfig.onWaitLoop = []() {
+    WiFiSettings.onWaitLoop = []() {
         static CHSV color(0, 255, 255);
         color.hue += 10;
         FastLED.showColor(color);
-        if (! digitalRead(buttonpin)) WiFiConfig.portal();
+        if (! digitalRead(buttonpin)) WiFiSettings.portal();
         return 50;
     };
-    WiFiConfig.onSuccess = []() {
+    WiFiSettings.onSuccess = []() {
         FastLED.showColor(CRGB::Green);
         setup_ota();
         delay(200);
     };
-    WiFiConfig.onPortal = []() {
+    WiFiSettings.onPortal = []() {
         setup_ota();
     };
-    WiFiConfig.onPortalWaitLoop = []() {
+    WiFiSettings.onPortalWaitLoop = []() {
         static CHSV color(0, 255, 255);
         color.saturation--;
         FastLED.showColor(color);
         ArduinoOTA.handle();
     };
 
-    String server = WiFiConfig.string("mqtt_server", 64, "test.mosquitto.org");
-    int    port   = WiFiConfig.integer("mqtt_port", 0, 65535, 1883);
-    mqtt_topic    = WiFiConfig.string("matrixflut_topic", "matrixflut");
+    String server = WiFiSettings.string("mqtt_server", 64, "test.mosquitto.org");
+    int    port   = WiFiSettings.integer("mqtt_port", 0, 65535, 1883);
+    mqtt_topic    = WiFiSettings.string("matrixflut_topic", "matrixflut");
 
-    WiFiConfig.connect();
+    WiFiSettings.connect();
 
     mqtt.begin(server.c_str(), port, wificlient);
     mqtt.onMessageAdvanced(mqtt_callback);
